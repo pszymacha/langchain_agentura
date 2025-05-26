@@ -1,0 +1,57 @@
+# Środowiska wirtualne
+venv/
+wslvenv/
+env/
+ENV/
+.venv/
+.env
+
+# Cache Pythona
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+*.so
+.Python
+
+# Pliki dystrybucyjne
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Pliki konfiguracyjne IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.vs/
+*.sublime-project
+*.sublime-workspace
+
+# Logi i bazy danych
+*.log
+*.sqlite3
+*.db
+
+# Pliki tymczasowe
+.coverage
+htmlcov/
+.tox/
+.nox/
+*.tmp
+*.bak
+.DS_Store
+.hypothesis/
+
+# Pliki specyficzne dla projektu
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Pliki danych
+*.csv
+*.dat
+*.out 

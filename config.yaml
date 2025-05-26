@@ -1,0 +1,49 @@
+# Main LLM configuration
+llm:
+  provider: openai  # Possible values: openai, anthropic
+  models:
+    openai:
+      name: gpt-4o
+      temperature: 0.05
+    anthropic:
+      name: claude-3-5-sonnet-20240620
+      temperature: 0.05
+
+# Tools configuration
+tools:
+  - name: DuckDuckGo
+    enabled: true
+    type: duckduckgo
+    description: Search the internet for current information
+    parameters:
+      query:
+        description: Search query
+
+  - name: Wikipedia
+    enabled: true
+    type: wikipedia
+    description: Search Wikipedia for information
+    parameters:
+      query:
+        description: Search query
+
+  - name: Math
+    enabled: true
+    type: math
+    description: Solve mathematical problems
+    parameters:
+      expression:
+        description: Mathematical expression to evaluate
+
+  - name: Python
+    enabled: false
+    type: python
+    description: Execute Python code for calculations and data processing
+    parameters:
+      code:
+        description: Python code to execute
+
+  - name: DateTime
+    enabled: true
+    type: datetime
+    description: Get current date and time 
