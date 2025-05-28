@@ -107,6 +107,53 @@ All providers support these optional parameters:
 
 4. Run your agent - the system will automatically use the new configuration
 
+## Advanced Features
+
+### Recursion Limit Handling
+
+The system includes intelligent handling of LangGraph workflow iteration limits. Instead of throwing errors, the agent returns a draft response based on collected research data, clearly marked as incomplete.
+
+#### Configuration:
+```yaml
+graph:
+  recursion_limit: 50  # Default is 25, recommended 50
+```
+
+#### Programmatic usage:
+```python
+# Increase limit for complex queries
+agent = create_advanced_agent(llm, tools, recursion_limit=100)
+```
+
+#### When limit is reached:
+Instead of errors, you get draft responses like:
+```
+⚠️ **DRAFT RESPONSE - INCOMPLETE RESEARCH**
+
+This is a preliminary answer based on limited research data. I reached the maximum allowed iteration limit (50) before completing thorough analysis. The following response is based on incomplete information and should be considered a draft outline rather than a comprehensive answer.
+
+[Draft answer based on available data...]
+```
+
+#### Recommended values:
+- **Standard queries**: 25-50 iterations
+- **Complex research**: 75-100 iterations  
+- **Simple queries**: 10-25 iterations
+
+### Testing
+
+Run recursion limit tests:
+```bash
+# From project root
+python tests/test_recursion_limit.py
+
+# Or from tests directory
+cd tests
+python test_recursion_limit.py
+```
+
+The tests verify that the system gracefully handles iteration limits and returns meaningful partial results instead of errors.
+
 ## Troubleshooting
 
 **Azure OpenAI:**

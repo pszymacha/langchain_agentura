@@ -156,13 +156,13 @@ def main():
                     user_input = input(f"\n💬 Your query for {agent_name}: ").strip()
                     
                     # Check for exit or change agent
-                    if user_input.lower() in ['exit', 'quit', 'wyjdź']:
+                    if user_input.lower() in ['exit', 'quit']:
                         print("\n🔄 Returning to agent selection...")
                         break
-                    elif user_input.lower() in ['change', 'switch', 'zmień']:
+                    elif user_input.lower() in ['change', 'switch']:
                         print("\n🔄 Changing agent...")
                         break
-                    elif user_input.lower() in ['help', 'pomoc']:
+                    elif user_input.lower() in ['help']:
                         print("\n📚 Commands:")
                         print("• Type your research question")
                         print("• 'change' or 'switch' - Change agent type")

@@ -1,6 +1,6 @@
 """
-Model Factory - moduł odpowiedzialny za tworzenie instancji modeli LLM
-na podstawie konfiguracji z pliku YAML.
+Model Factory - module responsible for creating LLM model instances
+based on configuration from YAML file.
 """
 
 import os
@@ -9,39 +9,39 @@ from langchain_openai import ChatOpenAI, AzureChatOpenAI
 from langchain_anthropic import ChatAnthropic
 
 class ModelFactory:
-    """Fabryka modeli LLM wspierająca różnych dostawców."""
+    """LLM model factory supporting multiple providers."""
     
     @staticmethod
     def create_llm(config: Dict[str, Any]):
         """
-        Tworzy instancję modelu LLM na podstawie konfiguracji.
+        Create an LLM model instance based on configuration.
         
         Args:
-            config: Słownik z konfiguracją LLM z pliku YAML
+            config: Dictionary with LLM configuration from YAML file
             
         Returns:
-            Instancja modelu LLM (ChatOpenAI, ChatAnthropic, AzureChatOpenAI, itp.)
+            LLM model instance (ChatOpenAI, ChatAnthropic, AzureChatOpenAI, etc.)
             
         Raises:
-            ValueError: Jeśli podany dostawca nie jest wspierany
+            ValueError: If the provider is not supported
         """
         provider = config.get("provider", "openai").lower()
         
         if provider == "openai":
             model_config = config.get("models", {}).get("openai", {})
             
-            # Sprawdzamy, czy klucz API dla OpenAI jest dostępny
+            # Check if OpenAI API key is available
             if not os.environ.get("OPENAI_API_KEY"):
                 raise ValueError(
-                    "Brak klucza API dla OpenAI. "
-                    "Upewnij się, że OPENAI_API_KEY jest ustawiony w pliku .env"
+                    "Missing OpenAI API key. "
+                    "Make sure OPENAI_API_KEY is set in .env file"
                 )
             
-            # Podstawowe parametry
+            # Basic parameters
             model_name = model_config.get("name", "gpt-4o")
             temperature = model_config.get("temperature", 0.5)
             
-            # Opcjonalne parametry
+            # Optional parameters
             kwargs = {}
             if model_config.get("base_url"):
                 kwargs["base_url"] = model_config["base_url"]
@@ -61,18 +61,18 @@ class ModelFactory:
         elif provider == "azure_openai":
             model_config = config.get("models", {}).get("azure_openai", {})
             
-            # Sprawdzamy wymagane zmienne środowiskowe dla Azure
+            # Check required environment variables for Azure
             if not os.environ.get("AZURE_OPENAI_API_KEY") and not os.environ.get("OPENAI_API_KEY"):
                 raise ValueError(
-                    "Brak klucza API dla Azure OpenAI. "
-                    "Upewnij się, że AZURE_OPENAI_API_KEY lub OPENAI_API_KEY jest ustawiony w pliku .env"
+                    "Missing Azure OpenAI API key. "
+                    "Make sure AZURE_OPENAI_API_KEY or OPENAI_API_KEY is set in .env file"
                 )
             
-            # Podstawowe parametry
+            # Basic parameters
             model_name = model_config.get("name", "gpt-4o")
             temperature = model_config.get("temperature", 0.5)
             
-            # Azure-specyficzne parametry
+            # Azure-specific parameters
             kwargs = {}
             if model_config.get("azure_endpoint"):
                 kwargs["azure_endpoint"] = model_config["azure_endpoint"]
@@ -94,18 +94,18 @@ class ModelFactory:
         elif provider == "anthropic":
             model_config = config.get("models", {}).get("anthropic", {})
             
-            # Sprawdzamy, czy klucz API dla Anthropic jest dostępny
+            # Check if Anthropic API key is available
             if not os.environ.get("ANTHROPIC_API_KEY"):
                 raise ValueError(
-                    "Brak klucza API dla Anthropic. "
-                    "Upewnij się, że ANTHROPIC_API_KEY jest ustawiony w pliku .env"
+                    "Missing Anthropic API key. "
+                    "Make sure ANTHROPIC_API_KEY is set in .env file"
                 )
             
-            # Podstawowe parametry
+            # Basic parameters
             model_name = model_config.get("name", "claude-3-5-sonnet-20240620")
             temperature = model_config.get("temperature", 0.5)
             
-            # Opcjonalne parametry
+            # Optional parameters
             kwargs = {}
             if model_config.get("base_url"):
                 kwargs["base_url"] = model_config["base_url"]
@@ -121,5 +121,5 @@ class ModelFactory:
             )
             
         else:
-            raise ValueError(f"Nieobsługiwany dostawca LLM: {provider}. "
-                           "Wspierani dostawcy to: openai, anthropic, azure_openai") 
+            raise ValueError(f"Unsupported LLM provider: {provider}. "
+                           "Supported providers are: openai, anthropic, azure_openai") 

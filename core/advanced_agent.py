@@ -1,5 +1,5 @@
 """
-Advanced Agent with controlled workflow using LangGraph
+Advanced Agent with a controlled workflow using LangGraph
 """
 
 import operator
@@ -9,6 +9,7 @@ from langchain_core.language_models import BaseLanguageModel
 from langchain_core.tools import BaseTool
 from langgraph.graph import StateGraph, END, START
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.errors import GraphRecursionError
 
 class AgentState(TypedDict):
     """State of the research agent"""
@@ -254,7 +255,7 @@ class AdvancedResearchAgent:
         return state.get("next_action", "finish")
     
     def _synthesize_answer(self, state: AgentState) -> Dict[str, Any]:
-        """Synthesize final answer from all gathered information"""
+        """Synthesize the final answer from all gathered information"""
         
         self._verbose_print("STEP 6: Final Synthesis", "Combining all research into comprehensive answer...")
         
@@ -287,6 +288,96 @@ class AdvancedResearchAgent:
             "final_answer": response.content
         }
     
+    def _generate_partial_answer(self, state: AgentState) -> str:
+        """Generate a partial answer when iteration limit is reached"""
+        
+        # Check if we have any partial data to work with
+        partial_data = {
+            "query": state.get("query", ""),
+            "research_plan": state.get("research_plan", ""),
+            "search_results": state.get("search_results", []),
+            "reflection": state.get("reflection", ""),
+            "iteration_count": state.get("iteration_count", 0)
+        }
+        
+        if self.verbose:
+            print(f"\n⚠️ Maximum iteration limit reached ({self.recursion_limit} steps)")
+            print(f"📊 Iteration count: {partial_data['iteration_count']}")
+            print("🔄 Generating draft answer from available data...")
+        
+        # If we have no meaningful data, return a basic message
+        if not partial_data["search_results"] and not partial_data["research_plan"]:
+            return f"""⚠️ **DRAFT RESPONSE - INCOMPLETE DATA**
+
+Unfortunately, I reached the maximum allowed number of steps ({self.recursion_limit}) before gathering sufficient information to provide a complete answer to: '{partial_data['query']}'
+
+Due to the iteration limit, I was unable to conduct proper research. Please increase the iteration limit in the configuration (graph.recursion_limit) or reformulate the query to be more specific."""
+        
+        # Generate actual draft answer using available data
+        draft_synthesis_prompt = f"""
+        User query: {partial_data['query']}
+        
+        Available research data (INCOMPLETE due to iteration limit of {self.recursion_limit}):
+        
+        Research plan:
+        {partial_data.get('research_plan', 'No research plan available')}
+        
+        Search results from {len(partial_data['search_results'])} iteration(s):
+        {chr(10).join(partial_data['search_results']) if partial_data['search_results'] else 'No search results available'}
+        
+        Last reflection:
+        {partial_data.get('reflection', 'No reflection available')}
+        
+        TASK: Create a DRAFT answer to the user's query based on the available incomplete data.
+        
+        IMPORTANT: Start your response with this exact warning:
+        "⚠️ **DRAFT RESPONSE - INCOMPLETE RESEARCH**
+        
+        This is a preliminary answer based on limited research data. I reached the maximum allowed iteration limit ({self.recursion_limit}) before completing thorough analysis. The following response is based on incomplete information and should be considered a draft outline rather than a comprehensive answer."
+        
+        Then provide:
+        1. A draft answer to the user's query based on available information
+        2. Clear indication of what information is missing or incomplete
+        3. Suggestions for getting a more complete answer
+        
+        Draft response:"""
+        
+        try:
+            response = self.llm.invoke([HumanMessage(content=draft_synthesis_prompt)])
+            return response.content
+        except Exception as e:
+            # Fallback if LLM call fails
+            if self.verbose:
+                print(f"Failed to generate draft answer: {str(e)}")
+            
+            # Create a basic draft from available data
+            draft_content = ""
+            
+            if partial_data['search_results']:
+                # Try to extract key information from search results
+                search_summary = partial_data['search_results'][0][:500] + "..." if partial_data['search_results'][0] else ""
+                draft_content = f"\n\nBased on preliminary search results:\n{search_summary}"
+            
+            return f"""⚠️ **DRAFT RESPONSE - INCOMPLETE RESEARCH**
+
+This is a preliminary answer based on limited research data. I reached the maximum allowed iteration limit ({self.recursion_limit}) before completing thorough analysis. The following response is based on incomplete information and should be considered a draft outline rather than a comprehensive answer.
+
+**Query:** {partial_data['query']}
+
+**Draft Response:**
+{draft_content if draft_content else "Insufficient data was gathered to provide even a preliminary answer."}
+
+**Research Status:**
+• Iterations completed: {partial_data['iteration_count']} of {self.recursion_limit} (limit reached)
+• Research plan: {'✅ Created' if partial_data['research_plan'] else '❌ Not created'}
+• Search operations: {len(partial_data['search_results'])} completed
+• Analysis depth: {'Partial' if partial_data['reflection'] else 'Minimal'}
+
+**To get a complete answer:**
+1. Increase iteration limit in configuration: `recursion_limit: {self.recursion_limit * 2}`
+2. Try a more specific query
+3. Re-run the research with current settings"""
+    
     def research(self, query: str, thread_id: str = "default") -> str:
         """Execute the research workflow"""
         
@@ -312,10 +403,41 @@ class AdvancedResearchAgent:
             "recursion_limit": self.recursion_limit
         }
         
-        # Execute the workflow
-        result = self.graph.invoke(initial_state, config)
-        
-        return result.get("final_answer", "No answer generated")
+        try:
+            # Execute the workflow
+            result = self.graph.invoke(initial_state, config)
+            return result.get("final_answer", "No answer generated")
+            
+        except GraphRecursionError as e:
+            if self.verbose:
+                print(f"\n⚠️ GraphRecursionError caught: {str(e)}")
+                print("🔄 Switching to partial answer generation...")
+            
+            # Get the current state from the graph if possible
+            try:
+                # Try to get the last checkpoint to access current state
+                checkpoints = list(self.graph.get_state_history(config))
+                if checkpoints:
+                    current_state = checkpoints[0].values
+                    if self.verbose:
+                        print(f"📊 Retrieved state from checkpoint: iteration {current_state.get('iteration_count', 0)}")
+                else:
+                    current_state = initial_state
+                    if self.verbose:
+                        print("📊 Using initial state (no checkpoints found)")
+            except Exception as checkpoint_error:
+                if self.verbose:
+                    print(f"⚠️ Could not retrieve state from checkpoint: {str(checkpoint_error)}")
+                current_state = initial_state
+            
+            # Generate partial answer
+            partial_answer = self._generate_partial_answer(current_state)
+            return partial_answer
+            
+        except Exception as e:
+            if self.verbose:
+                print(f"\n❌ Unexpected error during research: {str(e)}")
+            return f"An unexpected error occurred during research: {str(e)}. Please try again."
 
 def create_advanced_agent(llm: BaseLanguageModel, tools: List[BaseTool], verbose: bool = True, recursion_limit: int = 50) -> AdvancedResearchAgent:
     """Create an advanced research agent with controlled workflow"""

@@ -1,5 +1,5 @@
 """
-Pakiet zawierający implementacje narzędzi dla agenta.
+Package containing tool implementations for the agent.
 """
 
 from typing import Dict, Type
@@ -10,7 +10,7 @@ from .math_tool import MathTool
 from .python_tool import PythonTool
 from .datetime_tool import DateTimeTool
 
-# Rejestr wszystkich dostępnych narzędzi
+# Registry of all available tools
 TOOL_REGISTRY: Dict[str, Type[AgentTool]] = {
     "duckduckgo": DuckDuckGoTool,
     "wikipedia": WikipediaTool,

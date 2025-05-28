@@ -66,12 +66,12 @@ def main():
             user_input = input("\n🔍 Your research query: ").strip()
             
             # Check for exit commands
-            if user_input.lower() in ['exit', 'quit', 'wyjdź', 'koniec']:
+            if user_input.lower() in ['exit', 'quit']:
                 print("\n👋 Goodbye!")
                 break
             
             # Check for help
-            if user_input.lower() in ['help', 'pomoc']:
+            if user_input.lower() in ['help']:
                 print("\n📚 Available commands:")
                 print("• Type any research question to get started")
                 print("• 'exit' or 'quit' - Exit the program")

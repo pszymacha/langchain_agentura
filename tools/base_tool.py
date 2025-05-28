@@ -4,33 +4,33 @@ from pydantic import BaseModel, create_model
 from abc import ABC, abstractmethod
 
 class AgentTool(ABC):
-    """Bazowa klasa abstrakcyjna dla narzędzi agenta"""
+    """Abstract base class for agent tools"""
     
     @classmethod
     @abstractmethod
     def get_tool(cls, config: Dict[str, Any]) -> BaseTool:
         """
-        Metoda abstrakcyjna do implementacji w klasach potomnych.
-        Tworzy i zwraca narzędzie langchain na podstawie konfiguracji.
+        Abstract method to be implemented in subclasses.
+        Creates and returns a langchain tool based on configuration.
         
         Args:
-            config: Konfiguracja narzędzia z pliku YAML
+            config: Tool configuration from YAML file
             
         Returns:
-            Narzędzie langchain
+            Langchain tool
         """
         pass
     
     @classmethod
     def create_from_config(cls, config: Dict[str, Any]) -> Optional[BaseTool]:
         """
-        Tworzy narzędzie na podstawie konfiguracji.
+        Creates tool based on configuration.
         
         Args:
-            config: Konfiguracja narzędzia z pliku YAML
+            config: Tool configuration from YAML file
             
         Returns:
-            Narzędzie langchain lub None jeśli narzędzie jest wyłączone
+            Langchain tool or None if tool is disabled
         """
         if not config.get("enabled", True):
             return None

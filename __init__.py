@@ -1,3 +1,3 @@
 """
-Pakiet langchain_agentura - implementacja agenta opartego na LangChain.
+Package langchain_agentura - LangChain-based agent implementation.
 """ 

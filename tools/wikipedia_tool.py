@@ -5,29 +5,29 @@ from langchain_community.utilities.wikipedia import WikipediaAPIWrapper
 from .base_tool import AgentTool
 
 class WikipediaTool(AgentTool):
-    """Narzędzie do wyszukiwania informacji na Wikipedii"""
+    """Tool for searching information on Wikipedia"""
     
     @classmethod
     def get_tool(cls, config: Dict[str, Any]) -> BaseTool:
         """
-        Tworzy narzędzie Wikipedia na podstawie konfiguracji.
+        Creates Wikipedia tool based on configuration.
         
         Args:
-            config: Konfiguracja narzędzia z pliku YAML
+            config: Tool configuration from YAML file
             
         Returns:
-            Narzędzie Wikipedia
+            Wikipedia tool
         """
         wiki_tool = WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper())
         name = config.get("name", "Wikipedia")
-        description = config.get("description", "Użyteczne do wyszukiwania informacji na Wikipedii")
+        description = config.get("description", "Useful for searching information on Wikipedia")
         
-        # Pobierz konfigurację parametrów z config jeśli istnieje
+        # Get parameter configuration from config if it exists
         params_config = config.get("parameters", {})
         query_description = params_config.get("query", {}).get("description", 
-                                                           "Zapytanie do wyszukania na Wikipedii")
+                                                           "Query to search on Wikipedia")
         
-        # Funkcja musi wyraźnie wymagać parametru query
+        # Function must explicitly require query parameter
         return StructuredTool.from_function(
             func=lambda query: wiki_tool.run(query),
             name=name,

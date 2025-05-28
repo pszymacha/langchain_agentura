@@ -1,5 +1,5 @@
 """
-Agent Factory - moduł odpowiedzialny za tworzenie agenta na podstawie konfiguracji
+Agent Factory - module responsible for creating agents based on configuration
 """
 
 from typing import Dict, Any, List, Optional
@@ -17,50 +17,50 @@ from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 
 class AgentFactory:
-    """Fabryka agentów wspierająca różne konfiguracje."""
+    """Agent factory supporting various configurations."""
     
     @staticmethod
     def create_agent(llm: BaseLanguageModel, tools: List[BaseTool]) -> AgentExecutor:
         """
-        Tworzy agenta na podstawie modelu LLM i narzędzi.
+        Create agent based on LLM model and tools.
         
         Args:
-            llm: Model językowy
-            tools: Lista narzędzi
+            llm: Language model
+            tools: List of tools
             
         Returns:
-            Wykonawca agenta (AgentExecutor)
+            Agent executor (AgentExecutor)
         """
-        # Definiowanie promptu
+        # Define prompt
         prompt = ChatPromptTemplate.from_messages(
             [
-                ("system", """Jesteś pomocnym, przyjaznym asystentem. Odpowiadasz po polsku.
-                Używasz dostępnych narzędzi, gdy potrzebujesz znaleźć informacje, 
-                ale jeśli znasz odpowiedź bezpośrednio to odpowiadasz bez używania narzędzi.
-                Twoje odpowiedzi są zwięzłe i konkretne.
+                ("system", """You are a helpful, friendly assistant. You respond in English.
+                Use available tools when you need to find information,
+                but if you know the answer directly, respond without using tools.
+                Your responses are concise and specific.
                 
-                WAŻNE: Gdy używasz narzędzia, musisz zawsze podać wszystkie wymagane parametry.
-                Dla narzędzia Wyszukiwarka zawsze musisz podać parametr 'query' z zapytaniem.
-                Dla narzędzia Wikipedia zawsze musisz podać parametr 'query' z zapytaniem.
-                Dla narzędzia Kalkulator zawsze musisz podać parametr 'expression' z wyrażeniem.
-                Dla narzędzia PythonExecutor zawsze musisz podać parametr 'code' z kodem.
-                Narzędzie AktualnaData nie wymaga parametrów.
+                IMPORTANT: When using a tool, you must always provide all required parameters.
+                For the Search tool, you must always provide the 'query' parameter with the search query.
+                For the Wikipedia tool, you must always provide the 'query' parameter with the search query.
+                For the Calculator tool, you must always provide the 'expression' parameter with the expression.
+                For the PythonExecutor tool, you must always provide the 'code' parameter with the code.
+                The CurrentDate tool does not require parameters.
                 
-                PRZYKŁAD: Jeśli chcesz użyć narzędzia Wyszukiwarka, wywołaj je z parametrem query o wartości "twoje zapytanie"
+                EXAMPLE: If you want to use the Search tool, call it with the query parameter value "your search query"
                 
-                NIGDY nie wywołuj narzędzia bez podania wymaganych parametrów."""),
+                NEVER call a tool without providing the required parameters."""),
                 MessagesPlaceholder("chat_history", optional=True),
                 ("human", "{input}"),
                 MessagesPlaceholder("agent_scratchpad"),
             ]
         )
         
-        # Ustawiamy model do używania narzędzi
+        # Set up model to use tools
         if isinstance(llm, ChatOpenAI):
-            # Przygotowanie dla OpenAI
+            # Preparation for OpenAI
             llm_with_tools = llm.bind(functions=[tool.to_json() for tool in tools])
             
-            # Definiujemy łańcuch
+            # Define chain
             agent = (
                 {
                     "input": lambda x: x["input"],
@@ -74,10 +74,10 @@ class AgentFactory:
                 | OpenAIFunctionsAgentOutputParser()
             )
         elif isinstance(llm, ChatAnthropic):
-            # Przygotowanie dla Claude
+            # Preparation for Claude
             llm_with_tools = llm.bind_tools(tools)
             
-            # Definiujemy łańcuch dla Claude z formatowaniem wiadomości
+            # Define chain for Claude with message formatting
             agent = (
                 {
                     "input": lambda x: x["input"],
@@ -91,10 +91,10 @@ class AgentFactory:
                 | ToolsAgentOutputParser()
             )
         else:
-            # Dla innych modeli używamy standardowego bindowania narzędzi
+            # For other models use standard tool binding
             agent = llm.bind_tools(tools)
         
-        # Tworzenie wykonawcy agenta
+        # Create agent executor
         agent_executor = AgentExecutor.from_agent_and_tools(
             agent=agent,
             tools=tools,

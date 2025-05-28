@@ -1,6 +1,6 @@
 """
-Tool Factory - moduł odpowiedzialny za tworzenie narzędzi dla agenta
-na podstawie konfiguracji z pliku YAML.
+Tool Factory - a module responsible for creating tools for the agent
+based on configuration from a YAML file.
 """
 
 from typing import Dict, Any, List
@@ -9,19 +9,19 @@ from langchain_core.language_models import BaseLanguageModel
 from tools import TOOL_REGISTRY
 
 class ToolFactory:
-    """Fabryka narzędzi dla agenta wspierająca różne typy narzędzi."""
+    """Tool factory for the agent supporting various tool types."""
     
     @staticmethod
     def create_tools(config: List[Dict[str, Any]], llm: BaseLanguageModel) -> List[BaseTool]:
         """
-        Tworzy listę narzędzi na podstawie konfiguracji.
+        Create a list of tools based on configuration.
         
         Args:
-            config: Lista słowników z konfiguracją narzędzi z pliku YAML
-            llm: Instancja modelu LLM do użycia przez narzędzia (np. dla kalkulatora)
+            config: List of dictionaries with tool configuration from YAML file
+            llm: LLM model instance to be used by tools (e.g. for calculator)
             
         Returns:
-            Lista narzędzi (tools) dla agenta
+            List of tools for the agent
         """
         tools = []
         
@@ -31,20 +31,20 @@ class ToolFactory:
                 
             tool_type = tool_config.get("type", "").lower()
             
-            # Dodaj referencję do LLM, jeśli jest wymagana przez narzędzie
+            # Add LLM reference if required by the tool
             if tool_type == "math":
                 tool_config["llm"] = llm
             
-            # Pobierz klasę narzędzia z rejestru
+            # Get tool class from registry
             tool_class = TOOL_REGISTRY.get(tool_type)
             
             if tool_class:
-                # Utwórz narzędzie za pomocą klasy z rejestru
+                # Create tool using class from registry
                 tool = tool_class.create_from_config(tool_config)
                 if tool:
                     tools.append(tool)
                     print(f"Tool: {tool}")
             else:
-                print(f"UWAGA: Nieznany typ narzędzia: {tool_type}")
+                print(f"WARNING: Unknown tool type: {tool_type}")
         
         return tools 
