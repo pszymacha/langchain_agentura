@@ -3,13 +3,12 @@ Interactive Advanced Agent with controlled workflow
 Allows user to input custom queries from command line
 """
 
-import os
 import time
 from dotenv import load_dotenv
-from config_loader import ConfigLoader
-from model_factory import ModelFactory
-from tool_factory import ToolFactory
-from advanced_agent import create_advanced_agent
+from core.config_loader import ConfigLoader
+from core.model_factory import ModelFactory
+from core.tool_factory import ToolFactory
+from core.advanced_agent import create_advanced_agent
 
 def print_thinking_step(step_name: str, content: str, max_length: int = 200):
     """Print a thinking step with nice formatting"""
@@ -37,8 +36,11 @@ def main():
     tool_factory = ToolFactory()
     tools = tool_factory.create_tools(config["tools"], llm)
     
+    # Get recursion limit from config or use default
+    recursion_limit = config.get("graph", {}).get("recursion_limit", 50)
+    
     # Create advanced agent
-    agent = create_advanced_agent(llm, tools)
+    agent = create_advanced_agent(llm, tools, recursion_limit=recursion_limit)
     
     # Display welcome message
     print("🔬 Advanced Research Agent - Interactive Mode")

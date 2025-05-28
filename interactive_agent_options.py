@@ -3,14 +3,13 @@ Interactive Agent with Multiple Options
 Choose between different agent types and modes
 """
 
-import os
 import time
 from dotenv import load_dotenv
-from config_loader import ConfigLoader
-from model_factory import ModelFactory
-from tool_factory import ToolFactory
-from advanced_agent import create_advanced_agent
-from custom_agent_patterns import create_controlled_agent, AgentMode
+from core.config_loader import ConfigLoader
+from core.model_factory import ModelFactory
+from core.tool_factory import ToolFactory
+from core.advanced_agent import create_advanced_agent
+from agent_with_options.custom_agent_patterns import create_controlled_agent, AgentMode
 
 def display_agent_options():
     """Display available agent options"""

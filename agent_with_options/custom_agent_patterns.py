@@ -2,8 +2,8 @@
 Alternative patterns for advanced agent control
 """
 
-from typing import Dict, Any, List, Optional, Callable
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from typing import Dict, Any, List, Optional
+from langchain_core.messages import HumanMessage
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.tools import BaseTool
 from langchain.agents import AgentExecutor
@@ -238,7 +238,7 @@ class RuleBasedAgent:
         self.rules = rules
     
     def _check_rules(self, query: str, action: str) -> bool:
-        """Check if proposed action follows the rules"""
+        """Check if the proposed action follows the rules"""
         
         # Example rules
         if "research" in query.lower() and action != "search_first":
@@ -252,7 +252,7 @@ class RuleBasedAgent:
         return True
     
     def _get_mandatory_first_action(self, query: str) -> Optional[str]:
-        """Get mandatory first action based on query type and rules"""
+        """Get mandatory first action based on the query type and rules"""
         
         query_lower = query.lower()
         
@@ -299,7 +299,7 @@ def create_controlled_agent(agent_type: str, llm: BaseLanguageModel, tools: List
     """Factory function to create different types of controlled agents"""
     
     if agent_type == "langgraph":
-        from advanced_agent import create_advanced_agent
+        from core.advanced_agent import create_advanced_agent
         return create_advanced_agent(llm, tools)
     
     elif agent_type == "reflective":
@@ -316,7 +316,7 @@ def create_controlled_agent(agent_type: str, llm: BaseLanguageModel, tools: List
     elif agent_type == "controlled_executor":
         mode = kwargs.get("mode", AgentMode.RESEARCH)
         
-        # Create basic agent structure
+        # Create a basic agent structure
         prompt = ChatPromptTemplate.from_messages([
             ("system", "You are a helpful assistant. Follow the mode-specific instructions carefully."),
             MessagesPlaceholder("chat_history", optional=True),

@@ -1,13 +1,37 @@
 # Main LLM configuration
 llm:
-  provider: openai  # Possible values: openai, anthropic
+  provider: openai  # Possible values: openai, anthropic, azure_openai
   models:
     openai:
       name: gpt-4o
       temperature: 0.05
+      # Optional custom settings
+      # base_url: https://api.openai.com/v1  # Custom endpoint URL
+      # api_version: null  # API version (mainly for Azure)
+      # timeout: 60  # Request timeout in seconds
+      # max_retries: 2  # Maximum number of retries
+      
     anthropic:
       name: claude-3-5-sonnet-20240620
       temperature: 0.05
+      # Optional custom settings
+      # base_url: https://api.anthropic.com  # Custom endpoint URL
+      # timeout: 60  # Request timeout in seconds
+      # max_retries: 2  # Maximum number of retries
+      
+    azure_openai:
+      name: gpt-4o
+      temperature: 0.05
+      # Azure-specific settings
+      azure_endpoint: null  # e.g., https://your-resource.openai.azure.com/
+      deployment_name: null  # Azure deployment name
+      api_version: 2024-05-01-preview  # Azure API version
+      # timeout: 60  # Request timeout in seconds
+      # max_retries: 2  # Maximum number of retries
+
+# Graph configuration
+graph:
+  recursion_limit: 50  # Maximum number of graph iterations (default: 25)
 
 # Tools configuration
 tools:

@@ -24,11 +24,12 @@ class AgentState(TypedDict):
 class AdvancedResearchAgent:
     """Advanced agent with controlled workflow for research tasks"""
     
-    def __init__(self, llm: BaseLanguageModel, tools: List[BaseTool], verbose: bool = True):
+    def __init__(self, llm: BaseLanguageModel, tools: List[BaseTool], verbose: bool = True, recursion_limit: int = 50):
         self.llm = llm
         self.tools = {tool.name: tool for tool in tools}
         self.checkpointer = MemorySaver()
         self.verbose = verbose
+        self.recursion_limit = recursion_limit
         self.graph = self._build_graph()
     
     def _verbose_print(self, step: str, content: str, truncate_at: int = 300):
@@ -306,13 +307,16 @@ class AdvancedResearchAgent:
             "final_answer": ""
         }
         
-        config = {"configurable": {"thread_id": thread_id}}
+        config = {
+            "configurable": {"thread_id": thread_id},
+            "recursion_limit": self.recursion_limit
+        }
         
         # Execute the workflow
         result = self.graph.invoke(initial_state, config)
         
         return result.get("final_answer", "No answer generated")
 
-def create_advanced_agent(llm: BaseLanguageModel, tools: List[BaseTool], verbose: bool = True) -> AdvancedResearchAgent:
+def create_advanced_agent(llm: BaseLanguageModel, tools: List[BaseTool], verbose: bool = True, recursion_limit: int = 50) -> AdvancedResearchAgent:
     """Create an advanced research agent with controlled workflow"""
-    return AdvancedResearchAgent(llm, tools, verbose) 
+    return AdvancedResearchAgent(llm, tools, verbose, recursion_limit) 
