@@ -31,9 +31,13 @@ class DuckDuckGoTool(AgentTool):
             name=name,
             description=description,
             args_schema={
-                "query": {
-                    "type": "string",
-                    "description": query_description
-                }
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": query_description
+                    }
+                },
+                "required": ["query"]
             }
         ) 

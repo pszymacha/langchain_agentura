@@ -27,15 +27,18 @@ class WikipediaTool(AgentTool):
         query_description = params_config.get("query", {}).get("description", 
                                                            "Query to search on Wikipedia")
         
-        # Function must explicitly require query parameter
         return StructuredTool.from_function(
             func=lambda query: wiki_tool.run(query),
             name=name,
             description=description,
             args_schema={
-                "query": {
-                    "type": "string",
-                    "description": query_description
-                }
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": query_description
+                    }
+                },
+                "required": ["query"]
             }
         ) 

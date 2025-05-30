@@ -38,9 +38,13 @@ class MathTool(AgentTool):
             name=name,
             description=description,
             args_schema={
-                "expression": {
-                    "type": "string",
-                    "description": expression_description
-                }
+                "type": "object",
+                "properties": {
+                    "expression": {
+                        "type": "string",
+                        "description": expression_description
+                    }
+                },
+                "required": ["expression"]
             }
         ) 
