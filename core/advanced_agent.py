@@ -11,6 +11,8 @@ from langgraph.graph import StateGraph, END, START
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.errors import GraphRecursionError
 
+from .agent_interface import AgentInterface
+
 class AgentState(TypedDict):
     """State of the research agent"""
     messages: Annotated[List[HumanMessage | AIMessage | SystemMessage], operator.add]
@@ -22,7 +24,7 @@ class AgentState(TypedDict):
     iteration_count: int
     final_answer: str
 
-class AdvancedResearchAgent:
+class AdvancedResearchAgent(AgentInterface):
     """Advanced agent with controlled workflow for research tasks"""
     
     def __init__(self, llm: BaseLanguageModel, tools: List[BaseTool], verbose: bool = True, recursion_limit: int = 50):
@@ -32,6 +34,16 @@ class AdvancedResearchAgent:
         self.verbose = verbose
         self.recursion_limit = recursion_limit
         self.graph = self._build_graph()
+    
+    @property
+    def name(self) -> str:
+        """Return the display name of this agent"""
+        return "🔬 LangGraph Research Agent"
+    
+    @property
+    def description(self) -> str:
+        """Return a description of this agent's capabilities"""
+        return "Advanced multi-step research workflow with automatic planning, reflection, and synthesis using LangGraph"
     
     def _verbose_print(self, step: str, content: str, truncate_at: int = 300):
         """Print verbose output if enabled"""
@@ -277,6 +289,8 @@ class AdvancedResearchAgent:
         2. Supporting evidence from research
         3. Any important caveats or limitations
         
+        IMPORTANT: Answer in the same language as the original query.
+        
         Final Answer:"""
         
         response = self.llm.invoke([HumanMessage(content=synthesis_prompt)])
@@ -340,6 +354,8 @@ Due to the iteration limit, I was unable to conduct proper research. Please incr
         2. Clear indication of what information is missing or incomplete
         3. Suggestions for getting a more complete answer
         
+        IMPORTANT: Answer in the same language as the original query.
+        
         Draft response:"""
         
         try:
@@ -378,7 +394,7 @@ This is a preliminary answer based on limited research data. I reached the maxim
 2. Try a more specific query
 3. Re-run the research with current settings"""
     
-    def research(self, query: str, thread_id: str = "default") -> str:
+    def process(self, query: str, thread_id: str = "default") -> str:
         """Execute the research workflow"""
         
         if self.verbose:

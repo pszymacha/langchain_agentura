@@ -35,7 +35,7 @@ class ToolFactory:
             if tool_type == "math":
                 tool_config["llm"] = llm
             
-            # Get tool class from registry
+            # Get tool class from a registry
             tool_class = TOOL_REGISTRY.get(tool_type)
             
             if tool_class:
