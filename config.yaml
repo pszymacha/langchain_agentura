@@ -3,7 +3,7 @@ llm:
   provider: openai  # Possible values: openai, anthropic, azure_openai
   models:
     openai:
-      name: gpt-4o
+      name: gpt-4.1
       temperature: 0.01
       # Optional custom settings
       # base_url: https://api.openai.com/v1  # Custom endpoint URL
@@ -32,6 +32,14 @@ llm:
 # Graph configuration
 graph:
   recursion_limit: 50  # Maximum number of graph iterations (default: 25)
+
+# Session management configuration
+sessions:
+  storage_type: memory  # Options: memory, sqlite
+  db_path: data/sessions.db  # Path to SQLite database (only for sqlite storage)
+  timeout_hours: 24  # Hours after which inactive sessions expire
+  cleanup_interval_minutes: 60  # Interval for automatic cleanup of expired sessions
+  max_sessions_per_user: 10  # Maximum number of sessions per user (0 = unlimited)
 
 # Tools configuration
 tools:

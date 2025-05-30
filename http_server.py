@@ -1,6 +1,6 @@
 """
 HTTP Server for Agent API
-FastAPI server providing REST endpoints for agent interactions
+FastAPI server providing REST endpoints for agent interactions and session management
 """
 
 import uvicorn
@@ -25,6 +25,7 @@ class QueryRequest(BaseModel):
     query: str = Field(..., description="User query to process", min_length=1)
     agent_type: Optional[str] = Field("advanced", description="Type of agent to use")
     thread_id: Optional[str] = Field(None, description="Thread ID for session management")
+    user_id: Optional[str] = Field(None, description="User ID for session tracking")
     parameters: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Additional parameters for agent")
 
 
@@ -33,6 +34,38 @@ class QueryResponse(BaseModel):
     answer: str = Field(..., description="Final answer from the agent")
     logs: List[str] = Field(..., description="Execution logs and intermediate steps")
     metadata: Dict[str, Any] = Field(..., description="Metadata about the execution")
+
+
+class CreateSessionRequest(BaseModel):
+    """Request model for creating a session"""
+    user_id: Optional[str] = Field(None, description="User ID for the session")
+    metadata: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Session metadata")
+
+
+class SessionResponse(BaseModel):
+    """Response model for session information"""
+    session_id: str
+    user_id: Optional[str]
+    created_at: str
+    last_accessed: str
+    metadata: Dict[str, Any]
+    context: Dict[str, Any]
+
+
+class SessionListResponse(BaseModel):
+    """Response model for session list"""
+    sessions: List[SessionResponse]
+    total_count: int
+
+
+class SessionStatsResponse(BaseModel):
+    """Response model for session statistics"""
+    active_sessions_memory: int
+    total_sessions: int
+    unique_users: int
+    storage_type: str
+    session_timeout_hours: float
+    last_cleanup: str
 
 
 class AgentTypeInfo(BaseModel):
@@ -54,6 +87,7 @@ class HealthResponse(BaseModel):
     status: str
     tools_count: int
     agent_types: List[str]
+    session_stats: Dict[str, Any]
 
 
 # Initialize FastAPI app
@@ -101,12 +135,16 @@ async def startup_event():
         # Get recursion limit from config
         recursion_limit = config.get("graph", {}).get("recursion_limit", 50)
         
-        # Initialize agent service
-        agent_service = AgentService(llm, tools, recursion_limit)
+        # Get session configuration
+        session_config = config.get("sessions", {})
+        
+        # Initialize agent service with session management
+        agent_service = AgentService(llm, tools, recursion_limit, session_config)
         
         logging.info("Agent service initialized successfully")
         logging.info(f"Available tools: {[tool.name for tool in tools]}")
         logging.info(f"Recursion limit: {recursion_limit}")
+        logging.info(f"Session storage: {session_config.get('storage_type', 'memory')}")
         
     except Exception as e:
         logging.error(f"Failed to initialize agent service: {str(e)}")
@@ -122,7 +160,8 @@ async def health_check():
     return HealthResponse(
         status="healthy",
         tools_count=len(agent_service.tools),
-        agent_types=list(agent_service.agent_types.keys())
+        agent_types=list(agent_service.agent_types.keys()),
+        session_stats=agent_service.get_session_stats()
     )
 
 
@@ -159,16 +198,17 @@ async def process_query(request: QueryRequest, background_tasks: BackgroundTasks
         raise HTTPException(status_code=503, detail="Agent service not initialized")
     
     try:
-        # Process the query
+        # Process the query with session management
         result = agent_service.process_query(
             query=request.query,
             agent_type=request.agent_type,
             thread_id=request.thread_id,
+            user_id=request.user_id,
             **request.parameters
         )
         
         # Add background task for cleanup if needed
-        # background_tasks.add_task(cleanup_task, request.thread_id)
+        # background_tasks.add_task(cleanup_task, result["metadata"]["thread_id"])
         
         return QueryResponse(**result)
         
@@ -187,6 +227,105 @@ async def process_query_stream(request: QueryRequest):
     """Process a query with streaming response (future implementation)"""
     # TODO: Implement streaming response for real-time updates
     raise HTTPException(status_code=501, detail="Streaming not yet implemented")
+
+
+# Session Management Endpoints
+
+@app.post("/sessions", response_model=Dict[str, str])
+async def create_session(request: CreateSessionRequest):
+    """Create a new session"""
+    if not agent_service:
+        raise HTTPException(status_code=503, detail="Agent service not initialized")
+    
+    try:
+        session_id = agent_service.create_session(
+            user_id=request.user_id,
+            metadata=request.metadata
+        )
+        return {"session_id": session_id}
+    
+    except Exception as e:
+        logging.error(f"Error creating session: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create session: {str(e)}")
+
+
+@app.get("/sessions/{session_id}", response_model=SessionResponse)
+async def get_session(session_id: str):
+    """Get session information"""
+    if not agent_service:
+        raise HTTPException(status_code=503, detail="Agent service not initialized")
+    
+    session = agent_service.get_session_info(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    return SessionResponse(
+        session_id=session.session_id,
+        user_id=session.user_id,
+        created_at=session.created_at.isoformat(),
+        last_accessed=session.last_accessed.isoformat(),
+        metadata=session.metadata,
+        context=session.context
+    )
+
+
+@app.delete("/sessions/{session_id}")
+async def delete_session(session_id: str):
+    """Delete a session"""
+    if not agent_service:
+        raise HTTPException(status_code=503, detail="Agent service not initialized")
+    
+    deleted = agent_service.delete_session(session_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    return {"message": "Session deleted successfully"}
+
+
+@app.get("/users/{user_id}/sessions", response_model=SessionListResponse)
+async def list_user_sessions(user_id: str):
+    """List all sessions for a user"""
+    if not agent_service:
+        raise HTTPException(status_code=503, detail="Agent service not initialized")
+    
+    sessions = agent_service.list_user_sessions(user_id)
+    
+    session_responses = [
+        SessionResponse(
+            session_id=session.session_id,
+            user_id=session.user_id,
+            created_at=session.created_at.isoformat(),
+            last_accessed=session.last_accessed.isoformat(),
+            metadata=session.metadata,
+            context=session.context
+        )
+        for session in sessions
+    ]
+    
+    return SessionListResponse(
+        sessions=session_responses,
+        total_count=len(session_responses)
+    )
+
+
+@app.get("/sessions/stats", response_model=SessionStatsResponse)
+async def get_session_stats():
+    """Get session statistics"""
+    if not agent_service:
+        raise HTTPException(status_code=503, detail="Agent service not initialized")
+    
+    stats = agent_service.get_session_stats()
+    return SessionStatsResponse(**stats)
+
+
+@app.post("/sessions/cleanup")
+async def cleanup_expired_sessions():
+    """Manually trigger cleanup of expired sessions"""
+    if not agent_service:
+        raise HTTPException(status_code=503, detail="Agent service not initialized")
+    
+    cleaned_count = agent_service.cleanup_expired_sessions()
+    return {"message": f"Cleaned up {cleaned_count} expired sessions"}
 
 
 # Optional: Background tasks
